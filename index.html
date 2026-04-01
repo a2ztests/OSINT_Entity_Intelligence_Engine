@@ -14,10 +14,6 @@
         padding: 20px;
     }
 
-    h1 {
-        margin-bottom: 10px;
-    }
-
     input {
         padding: 10px;
         width: 350px;
@@ -61,36 +57,27 @@
 
 <script>
 
-console.log("✅ Script loaded");
-
-// Wait until DOM is fully ready
 document.addEventListener("DOMContentLoaded", function () {
-
-    console.log("✅ DOM ready");
 
     const setBtn = document.getElementById("setApiBtn");
     const runBtn = document.getElementById("runBtn");
 
     // SET BACKEND URL
     setBtn.addEventListener("click", function () {
-        console.log("🔵 Set API clicked");
-
         const url = prompt("Paste your Cloudflare backend URL:");
-
         if (url) {
             localStorage.setItem("api_url", url);
-            alert("✅ Backend URL saved!");
+            alert("Backend URL saved!");
         }
     });
 
     // RUN ENGINE
     runBtn.addEventListener("click", function () {
-        console.log("🟢 Run clicked");
 
         const BASE_URL = localStorage.getItem("api_url");
 
         if (!BASE_URL) {
-            alert("⚠️ Please set backend URL first");
+            alert("Please set backend URL first");
             return;
         }
 
@@ -99,57 +86,39 @@ document.addEventListener("DOMContentLoaded", function () {
 
         container.innerHTML = "";
 
-        const fullUrl = BASE_URL + "/stream_people?names=" + encodeURIComponent(names);
-
-        console.log("🌐 Connecting to:", fullUrl);
-
-        const evt = new EventSource(fullUrl);
+        const evt = new EventSource(
+            BASE_URL + "/stream_people?names=" + encodeURIComponent(names)
+        );
 
         evt.onmessage = function(event) {
-            console.log("📩 Received:", event.data);
 
             const data = JSON.parse(event.data);
 
             const div = document.createElement("div");
             div.className = "card";
 
-            const summary = data.analysis?.summary || "No summary";
-            const findings = data.analysis?.key_findings || [];
-            const risks = data.analysis?.risk_flags || [];
+            const summary = data.analysis && data.analysis.summary ? data.analysis.summary : "No summary";
+            const findings = data.analysis && data.analysis.key_findings ? data.analysis.key_findings : [];
+            const risks = data.analysis && data.analysis.risk_flags ? data.analysis.risk_flags : [];
 
-            div.innerHTML = `
-                <h2>${data.name}</h2>
-
-                <p><b>Same Person:</b> ${data.entity_resolution.is_same_person}</p>
-                <p><b>Confidence:</b> ${data.entity_resolution.confidence}%</p>
-
-                <p><b>Summary:</b> ${summary}</p>
-
-                <p><b>Key Findings:</b> ${findings.length ? findings.join(", ") : "None"}</p>
-
-                <p><b>Risk Flags:</b> ${risks.length ? risks.join(", ") : "None"}</p>
-
-                <details>
-                    <summary>Profiles</summary>
-                    <pre>${JSON.stringify(data.profiles, null, 2)}</pre>
+            div.innerHTML =
+                "<h2>" + data.name + "</h2>" +
+                "<p><b>Same Person:</b> " + data.entity_resolution.is_same_person + "</p>" +
+                "<p><b>Confidence:</b> " + data.entity_resolution.confidence + "%</p>" +
+                "<p><b>Summary:</b> " + summary + "</p>" +
+                "<p><b>Key Findings:</b> " + (findings.length ? findings.join(", ") : "None") + "</p>" +
+                "<p><b>Risk Flags:</b> " + (risks.length ? risks.join(", ") : "None") + "</p>" +
+                "<details><summary>Profiles</summary><pre>" + JSON.stringify(data.profiles, null, 2) + "</pre></details>" +
 
 ```
-            </details>
-
-            <details>
-                <summary>Full JSON</summary>
-                <pre>${JSON.stringify(data, null, 2)}</pre>
-            </details>
-
-            <hr/>
-        `;
+            "<details><summary>Full JSON</summary><pre>" + JSON.stringify(data, null, 2) + "</pre></details>" +
+            "<hr/>";
 
         container.appendChild(div);
     };
 
-    evt.onerror = function(err) {
-        console.error("❌ SSE error:", err);
-        alert("⚠️ Connection issue — check backend URL or Colab");
+    evt.onerror = function() {
+        alert("Connection error. Check backend URL or Colab.");
     };
 });
 ```
