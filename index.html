@@ -1,106 +1,8 @@
-<!DOCTYPE html>
+Set Backend URL
 
-<html>
-<head>
-    <title>OSINT Entity Intelligence Engine</title>
-    <style>
-        body {
-            font-family: Arial;
-            background: #0f172a;
-            color: white;
-            padding: 20px;
-        }
-        .card {
-            background: #1e293b;
-            padding: 15px;
-            margin-top: 15px;
-            border-radius: 10px;
-        }
-        button {
-            padding: 10px;
-            margin: 5px;
-            cursor: pointer;
-        }
-        input {
-            padding: 10px;
-            width: 400px;
-        }
-        a { color: #38bdf8; }
-        pre {
-            background: black;
-            padding: 10px;
-            overflow-x: auto;
-        }
-    </style>
-</head>
 
-<body>
 
-<h1>🧠 OSINT Entity Intelligence Engine</h1>
 
-<button onclick="setApi()">Set Backend URL</button>
-
-<br><br>
-
-<input id="names" placeholder="Enter names (comma separated)">
-<button onclick="run()">Run Intelligence</button>
-
-<div id="results"></div>
-
-<script>
-
-// ✅ Store backend URL once
-function setApi() {
-    const url = prompt("Paste your backend URL (Cloudflare):");
-    localStorage.setItem("api_url", url);
-}
-
-// ✅ Main execution
-function run() {
-    const BASE_URL = localStorage.getItem("api_url");
-
-    if (!BASE_URL) {
-        alert("Please set backend URL first");
-        return;
-    }
-
-    const names = document.getElementById("names").value;
-    const container = document.getElementById("results");
-
-    container.innerHTML = "";
-
-    const url = BASE_URL + "/stream_people?names=" + encodeURIComponent(names);
-
-    const evt = new EventSource(url);
-
-    evt.onmessage = function(event) {
-        const data = JSON.parse(event.data);
-
-        const div = document.createElement("div");
-        div.className = "card";
-
-        // safe handling (LLM sometimes returns weird output)
-        const summary = data.analysis?.summary || "No summary";
-        const findings = data.analysis?.key_findings || [];
-        const risks = data.analysis?.risk_flags || [];
-
-        div.innerHTML = `
-            <h2>${data.name}</h2>
-
-            <p><b>Same Person:</b> ${data.entity_resolution.is_same_person}</p>
-            <p><b>Confidence:</b> ${data.entity_resolution.confidence}%</p>
-
-            <p><b>Summary:</b> ${summary}</p>
-
-            <p><b>Key Findings:</b> ${findings.length ? findings.join(", ") : "None"}</p>
-
-            <p><b>Risk Flags:</b> ${risks.length ? risks.join(", ") : "None"}</p>
-
-            <details>
-                <summary>Profiles</summary>
-                <pre>${JSON.stringify(data.profiles, null, 2)}</pre>
-
-```
         </details>
 
         <details>
@@ -117,11 +19,3 @@ function run() {
 evt.onerror = function(err) {
     console.error("SSE error:", err);
 };
-```
-
-}
-
-</script>
-
-</body>
-</html>
