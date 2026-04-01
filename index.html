@@ -50,85 +50,111 @@
 
 <h1>🧠 OSINT Entity Intelligence Engine</h1>
 
-<button onclick="setApi()">Set Backend URL</button>
+<button id="setApiBtn">Set Backend URL</button>
 
 <br><br>
 
 <input id="names" placeholder="Enter names (comma separated)">
-<button onclick="run()">Run Intelligence</button>
+<button id="runBtn">Run Intelligence</button>
 
 <div id="results"></div>
 
 <script>
 
-function setApi() {
-    const url = prompt("Paste your Cloudflare backend URL:");
-    localStorage.setItem("api_url", url);
-}
+console.log("✅ Script loaded");
 
-function run() {
-    const BASE_URL = localStorage.getItem("api_url");
+// Wait until DOM is fully ready
+document.addEventListener("DOMContentLoaded", function () {
 
-    if (!BASE_URL) {
-        alert("Please set backend URL first");
-        return;
-    }
+    console.log("✅ DOM ready");
 
-    const names = document.getElementById("names").value;
-    const container = document.getElementById("results");
+    const setBtn = document.getElementById("setApiBtn");
+    const runBtn = document.getElementById("runBtn");
 
-    container.innerHTML = "";
+    // SET BACKEND URL
+    setBtn.addEventListener("click", function () {
+        console.log("🔵 Set API clicked");
 
-    const evt = new EventSource(
-        BASE_URL + "/stream_people?names=" + encodeURIComponent(names)
-    );
+        const url = prompt("Paste your Cloudflare backend URL:");
 
-    evt.onmessage = function(event) {
-        const data = JSON.parse(event.data);
+        if (url) {
+            localStorage.setItem("api_url", url);
+            alert("✅ Backend URL saved!");
+        }
+    });
 
-        const div = document.createElement("div");
-        div.className = "card";
+    // RUN ENGINE
+    runBtn.addEventListener("click", function () {
+        console.log("🟢 Run clicked");
 
-        const summary = data.analysis?.summary || "No summary";
-        const findings = data.analysis?.key_findings || [];
-        const risks = data.analysis?.risk_flags || [];
+        const BASE_URL = localStorage.getItem("api_url");
 
-        div.innerHTML = `
-            <h2>${data.name}</h2>
+        if (!BASE_URL) {
+            alert("⚠️ Please set backend URL first");
+            return;
+        }
 
-            <p><b>Same Person:</b> ${data.entity_resolution.is_same_person}</p>
-            <p><b>Confidence:</b> ${data.entity_resolution.confidence}%</p>
+        const names = document.getElementById("names").value;
+        const container = document.getElementById("results");
 
-            <p><b>Summary:</b> ${summary}</p>
+        container.innerHTML = "";
 
-            <p><b>Key Findings:</b> ${findings.length ? findings.join(", ") : "None"}</p>
+        const fullUrl = BASE_URL + "/stream_people?names=" + encodeURIComponent(names);
 
-            <p><b>Risk Flags:</b> ${risks.length ? risks.join(", ") : "None"}</p>
+        console.log("🌐 Connecting to:", fullUrl);
+
+        const evt = new EventSource(fullUrl);
+
+        evt.onmessage = function(event) {
+            console.log("📩 Received:", event.data);
+
+            const data = JSON.parse(event.data);
+
+            const div = document.createElement("div");
+            div.className = "card";
+
+            const summary = data.analysis?.summary || "No summary";
+            const findings = data.analysis?.key_findings || [];
+            const risks = data.analysis?.risk_flags || [];
+
+            div.innerHTML = `
+                <h2>${data.name}</h2>
+
+                <p><b>Same Person:</b> ${data.entity_resolution.is_same_person}</p>
+                <p><b>Confidence:</b> ${data.entity_resolution.confidence}%</p>
+
+                <p><b>Summary:</b> ${summary}</p>
+
+                <p><b>Key Findings:</b> ${findings.length ? findings.join(", ") : "None"}</p>
+
+                <p><b>Risk Flags:</b> ${risks.length ? risks.join(", ") : "None"}</p>
+
+                <details>
+                    <summary>Profiles</summary>
+                    <pre>${JSON.stringify(data.profiles, null, 2)}</pre>
+
+```
+            </details>
 
             <details>
-                <summary>Profiles</summary>
-                <pre>${JSON.stringify(data.profiles, null, 2)}</pre>
+                <summary>Full JSON</summary>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            </details>
 
-```
-        </details>
+            <hr/>
+        `;
 
-        <details>
-            <summary>Full JSON</summary>
-            <pre>${JSON.stringify(data, null, 2)}</pre>
-        </details>
+        container.appendChild(div);
+    };
 
-        <hr/>
-    `;
-
-    container.appendChild(div);
-};
-
-evt.onerror = function(err) {
-    console.error("SSE error:", err);
-};
+    evt.onerror = function(err) {
+        console.error("❌ SSE error:", err);
+        alert("⚠️ Connection issue — check backend URL or Colab");
+    };
+});
 ```
 
-}
+});
 
 </script>
 
